@@ -1,0 +1,19 @@
+# ============================================================
+# 炼炼 · AI 健身房训练助手 — docker-compose.yml
+# 宿主机端口 18088 → 容器 80
+# 容器名 ai-fitness-demo-web，避免与现有服务冲突
+# ============================================================
+services:
+  web:
+    build: .
+    image: ai-fitness-demo:latest
+    container_name: ai-fitness-demo-web
+    restart: unless-stopped
+    ports:
+      - "18088:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="AI 健身房训练计划助手 — 依据你的档案、目标与可用器械，用确定性规则生成一周训练计划，并支持逐组执行的训练模式。">
+<title>炼炼 · AI 健身房训练助手</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏋️</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- 医疗免责声明弹窗（首次访问展示） -->
+<div id="disclaimerModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="disclaimerTitle">
+  <div class="modal">
+    <div class="modal-icon">⚕️</div>
+    <h2 id="disclaimerTitle">医疗免责声明</h2>
+    <div class="modal-body">
+      <p>本应用（炼炼 · AI 健身房训练助手）提供的训练计划、动作与建议<strong>仅供参考，不构成任何医疗或健康专业意见</strong>。</p>
+      <ul>
+        <li>开始任何锻炼计划前，请咨询医生或专业健身教练，特别是患有心血管疾病、高血压、糖尿病、骨关节损伤、术后恢复期、孕期或有其他慢性疾病时。</li>
+        <li>训练中出现胸痛、头晕、恶心、关节剧痛等不适，请<strong>立即停止</strong>并寻求医疗帮助。</li>
+        <li>请根据自身能力循序渐进，选择合适的重量，注重动作规范，量力而行，避免受伤。</li>
+        <li>未成年人、孕妇及高龄人群应在专业人士指导下训练。</li>
+      </ul>
+      <p class="modal-note">继续使用即表示您已阅读并理解以上内容，同意自行承担锻炼风险。</p>
+    </div>
+    <button id="disclaimerOk" class="btn btn-primary btn-block">我已了解并同意</button>
+  </div>
+</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#/dashboard">
+      <span class="brand-logo">🏋️</span>
+      <span class="brand-text">炼炼<em>AI 健身房训练助手</em></span>
+    </a>
+    <nav class="topnav" id="topnav"></nav>
+  </div>
+</header>
+
+<main id="app">
+  <section id="view-dashboard" class="view" data-title="首页"></section>
+  <section id="view-profile" class="view" data-title="档案"></section>
+  <section id="view-equipment" class="view" data-title="器械"></section>
+  <section id="view-plan" class="view" data-title="计划"></section>
+  <section id="view-train" class="view" data-title="训练"></section>
+</main>
+
+<nav class="bottomnav" id="bottomnav" aria-label="主导航"></nav>
+
+<footer class="footer">
+  <p>⚠️ 本应用仅供参考，不构成医疗建议。训练前请咨询医生；运动中如有不适请立即停止。请量力而行，注意安全。</p>
+  <p class="footer-sub">炼炼 · AI 健身房训练助手 · 纯前端本地运行，数据仅保存在你的浏览器 (localStorage)</p>
+</footer>
+
+<div id="toast" class="toast hidden" role="status"></div>
+
+<noscript><div style="padding:24px;text-align:center;color:#fff;background:#3a1d1d">本应用需要启用 JavaScript 才能使用。</div></noscript>
+
+<script src="js/exercises.js"></script>
+<script src="js/plan.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
