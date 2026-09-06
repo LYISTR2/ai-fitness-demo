@@ -10,6 +10,23 @@
   var DB = window.FITNESS_DB;
   var Engine = window.PlanEngine;
 
+
+  /* Compact, local outline icons; no external font or runtime dependency. */
+  function icon(name) {
+    var paths = {
+      dashboard: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+      profile: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h4"/>',
+      equipment: '<path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/>',
+      plan: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2"/>',
+      train: '<path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z"/>',
+      arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>',
+      check: '<path d="m5 12 4 4L19 6"/>',
+      clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+      shield: '<path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8 12 3 3 5-6"/>'
+    };
+    return '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (paths[name] || paths.equipment) + '</svg>';
+  }
+
   /* ---------------- 基础工具 ---------------- */
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -102,23 +119,23 @@
 
   /* ---------------- 导航 ---------------- */
   var NAVS = [
-    { id: 'dashboard', label: '首页', icon: '🏠' },
-    { id: 'profile', label: '档案', icon: '📋' },
-    { id: 'equipment', label: '器械', icon: '🏋️' },
-    { id: 'plan', label: '计划', icon: '📅' },
-    { id: 'train', label: '训练', icon: '⚡' }
+    { id: 'dashboard', label: '训练概览', icon: '' },
+    { id: 'profile', label: '档案', icon: '' },
+    { id: 'equipment', label: '器械', icon: '' },
+    { id: 'plan', label: '计划', icon: '' },
+    { id: 'train', label: '训练', icon: '' }
   ];
-  var VIEW_TITLES = { dashboard: '首页', profile: '训练档案', equipment: '器械库', plan: '一周计划', train: '训练执行' };
+  var VIEW_TITLES = { dashboard: '训练概览', profile: '训练档案', equipment: '器械库', plan: '一周计划', train: '训练执行' };
 
   function go(view) { location.hash = '#/' + view; }
 
   function renderNavs() {
     $('#topnav').innerHTML = NAVS.map(function (n) {
-      return '<a href="#/' + n.id + '" data-nav="' + n.id + '">' + n.label + '</a>';
+      return '<a href="#/' + n.id + '" data-nav="' + n.id + '" aria-label="' + n.label + '" title="' + n.label + '">' + icon(n.id) + '<span>' + n.label + '</span></a>';
     }).join('');
     $('#bottomnav').innerHTML = NAVS.map(function (n) {
       return '<a href="#/' + n.id + '" data-nav="' + n.id + '">' +
-        '<span class="ic">' + n.icon + '</span>' + n.label + '</a>';
+        '<span class="ic">' + icon(n.id) + '</span>' + n.label + '</a>';
     }).join('');
   }
 
@@ -128,10 +145,12 @@
     $$('.view').forEach(function (v) { v.classList.remove('active'); });
     $$('[data-nav]').forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('data-nav') === view);
+      if (a.getAttribute('data-nav') === view) { a.setAttribute('aria-current', 'page'); } else { a.removeAttribute('aria-current'); }
     });
     var el = $('#view-' + view);
     el.classList.add('active');
     document.title = VIEW_TITLES[view] + ' · 炼炼 AI 健身房训练助手';
+    $('#pageLocation').textContent = VIEW_TITLES[view];
     renderers[view]();
     window.scrollTo(0, 0);
   }
@@ -182,93 +201,95 @@
   };
 
   /* ============ 仪表盘 ============ */
-  function renderDashboard() {
-    var v = $('#view-dashboard');
-    var p = state.profile;
-    var stats = computeStats();
-    var tn = todayOrNextDay();
-    var chips = '';
-    if (p) {
-      chips = '<span class="chip">' + DB.GOALS[p.goal].emoji + ' ' + DB.GOALS[p.goal].label + '</span>' +
-        '<span class="chip muted">' + DB.EXPERIENCE[p.experience].label + '</span>' +
-        '<span class="chip muted">每周 ' + p.frequency + ' 练</span>' +
-        '<span class="chip muted">单次 ' + p.duration + ' 分钟</span>';
+  var dashboardRange = 30, dashboardDemo = false, dashboardMetric = 'calories', historySearch = '', historyPage = 0;
+  function demoLogs() {
+    var records=[];
+    for(var i=89;i>=0;i--){
+      var d=new Date();d.setDate(d.getDate()-i);
+      if([1,3,5,6].indexOf(d.getDay())<0)continue;
+      var minutes=32+(i*7%29),weight=70;
+      records.push({date:dateKey(d),label:i%2?'上肢力量':'下肢与核心',goal:'muscle',totalSets:12+i%8,strengthSets:12+i%8,volume:1600+(i*137%2600),durationMinutes:minutes,calories:Math.round(3.5*weight*minutes/60),estimateVersion:1});
     }
-
-    var todayHtml = '';
-    if (!p) {
-      todayHtml =
-        '<div class="card"><div class="empty">' +
-        '<div class="empty-icon">📋</div><p>还没有你的训练档案。先花 1 分钟填写，就能生成专属计划。</p>' +
-        '<button class="btn btn-primary" data-go="profile">去填写档案</button></div></div>';
-    } else if (!state.plan) {
-      todayHtml =
-        '<div class="card"><div class="empty">' +
-        '<div class="empty-icon">🗓️</div><p>档案已就绪，但还没有生成训练计划。确认器械后即可一键生成。</p>' +
-        '<button class="btn btn-primary" data-go="plan">去生成计划</button></div></div>';
-    } else if (tn) {
-      var day = tn.day;
-      var steps = day.steps.slice(0, 4).map(function (s, i) {
-        var nm = s.kind === 'exercise' ? s.name : s.name;
-        var meta = s.kind === 'exercise' ? (s.sets + ' × ' + s.reps) : (s.minutes + ' 分钟');
-        return '<li><span class="n">' + (i + 1) + '</span><span>' + esc(nm) + '</span><span class="m">' + esc(meta) + '</span></li>';
-      }).join('');
-      var more = day.steps.length > 4 ? '<li style="color:var(--muted-2);font-size:12px;padding:6px 0 0;border:none">还有 ' + (day.steps.length - 4) + ' 个环节…</li>' : '';
-      todayHtml =
-        '<div class="card today-card"><div class="card-title-row">' +
-        '<h2>' + (tn.isToday ? '🔥 今日训练' : '⏭️ 下一训练日') + '</h2>' +
-        (tn.isToday ? '<span class="chip">' + day.weekday + ' · ' + day.label + '</span>' : '<span class="chip muted">' + day.weekday + ' · ' + day.label + '</span>') +
-        '</div>' +
-        '<ul class="today-list">' + steps + more + '</ul>' +
-        '<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">' +
-        '<button class="btn btn-primary btn-sm" data-start="' + day.index + '">▶ 开始训练</button>' +
-        '<button class="btn btn-ghost btn-sm" data-go="plan">查看完整计划</button>' +
-        '</div></div>';
-    }
-
-    v.innerHTML =
-      '<div class="hero">' +
-      '<h1>' + greeting() + '，欢迎回来 🏋️</h1>' +
-      '<div class="date-line">' + fmtDate() + (p ? ' · ' + p.height + 'cm / ' + p.weight + 'kg / ' + p.age + '岁 / ' + (p.gender === 'male' ? '男' : '女') : '') + '</div>' +
-      (chips ? '<div class="hero-chips">' + chips + '</div>' : '') +
-      '<div class="hero-actions">' +
-      (p ? '' : '<button class="btn btn-primary" data-go="profile">创建训练档案</button>') +
-      '<button class="btn btn-ghost" data-go="equipment">管理器械</button>' +
-      (p ? '<button class="btn btn-primary" data-go="plan">' + (state.plan ? '查看我的计划' : '生成一周计划') + '</button>' : '') +
-      '</div></div>' +
-
-      '<div class="stat-grid">' +
-      statBox(stats.totalSets, '累计完成组数', 'group') +
-      statBox(state.logs.length, '完成训练次数', 'plain') +
-      statBox(stats.thisWeek + ' / ' + (p ? p.frequency : '—'), '本周进度', 'plain') +
-      statBox(stats.streak + ' 天', '连续打卡', 'plain') +
-      '</div>' +
-
-      todayHtml +
-
-      '<div class="quick-grid">' +
-      quick('📋', '训练档案', 'profile') +
-      quick('🏋️', '器械库', 'equipment') +
-      quick('🗓️', '一周计划', 'plan') +
-      quick('⚡', '开始训练', 'train') +
-      '</div>' +
-
-      '<div class="card disclaimer-card">' +
-      '<h2>⚕️ 医疗免责声明</h2>' +
-      '<p class="sub">训练有风险，请务必阅读</p>' +
-      '<details><summary>展开阅读完整声明</summary>' +
-      '<div class="full-text">本应用仅供参考，不构成医疗或健康专业意见。开始锻炼前请咨询医生或专业教练，特别是有心血管疾病、高血压、糖尿病、骨关节损伤、术后恢复期、孕期等情况时。训练中如出现胸痛、头晕、恶心、关节剧痛等不适，请立即停止并寻求医疗帮助。请量力而行，循序渐进，注意动作规范。</div>' +
-      '</details></div>';
-
+    return records;
+  }
+  function metricText(value){return value.toLocaleString('zh-CN',{maximumFractionDigits:0});}
+  function metricCard(label,value,unit,key,detail){
+    return '<article class="metric-card"><div class="metric-label">'+label+'<span class="metric-icon">'+icon(key)+'</span></div><div class="metric-value">'+value+'<small>'+unit+'</small></div><div class="metric-detail">'+detail+'</div><p>'+(dashboardDemo?'示例数据 · 仅供预览':'根据当前浏览器中的训练记录')+'</p></article>';
+  }
+  function renderDashboard(){
+    var v=$('#view-dashboard'), M=window.FitnessMetrics;
+    var logs=dashboardDemo?demoLogs():state.logs;
+    var points=M.series(logs,dashboardRange,new Date());
+    var selected=logs.filter(function(l){return l.date>=points[0].date&&l.date<=points[points.length-1].date;});
+    var known=selected.filter(function(l){return M.finite(l.calories);});
+    var timed=selected.filter(function(l){return M.finite(l.durationMinutes);});
+    var calories=known.reduce(function(t,l){return t+l.calories;},0);
+    var minutes=timed.reduce(function(t,l){return t+l.durationMinutes;},0);
+    var volume=selected.reduce(function(t,l){return t+(Number(l.volume)||0);},0);
+    var days=new Set(selected.map(function(l){return l.date;})).size;
+    var tn=todayOrNextDay();
+    var missing=selected.length-known.length;
+    v.innerHTML='<div class="dash-heading"><div><h1>训练概览</h1><p>'+fmtDate()+' · 每一次训练，都有迹可循。</p></div><div class="dash-actions"><button class="btn btn-ghost" id="demoToggle" aria-pressed="'+dashboardDemo+'">'+(dashboardDemo?'返回我的数据':'查看示例')+'</button><button class="btn btn-primary" data-go="'+(state.profile?'train':'profile')+'">'+icon('train')+(state.profile?'开始训练':'创建训练档案')+'</button></div></div>'+
+      (dashboardDemo?'<div class="demo-banner" role="status">'+icon('shield')+'<span><b>示例预览</b>　所有图表和记录均为模拟数据，不会保存到你的档案。</span></div>':'')+
+      '<div class="metrics-grid">'+
+      metricCard('估算热量消耗',selected.length&&!known.length?'—':metricText(calories),'kcal','train',missing?'有 '+missing+' 次训练缺少估算数据':'近 '+dashboardRange+' 天的训练消耗')+
+      metricCard('估算训练时长',selected.length&&!timed.length?'—':metricText(minutes),'分钟','clock','近 '+dashboardRange+' 天 · 已完成环节')+
+      metricCard('完成训练',metricText(selected.length),'次','check',days+' 个活跃训练日')+
+      metricCard('累计训练容量',metricText(volume),'kg','equipment','记录重量 × 次数之和')+'</div>'+
+      '<section class="card chart-card" aria-labelledby="chartTitle"><div class="chart-header"><div><h2 id="chartTitle">训练消耗趋势</h2><p class="sub">按天汇总，查看最近 '+dashboardRange+' 天的训练表现</p></div><div class="range-switch" role="group" aria-label="统计时间范围">'+[90,30,7].map(function(n){return '<button data-range="'+n+'" aria-pressed="'+(dashboardRange===n)+'" class="'+(dashboardRange===n?'on':'')+'">近 '+n+' 天</button>';}).join('')+'</div></div><div class="chart-toolbar"><label class="metric-select">展示指标 <select id="chartMetric"><option value="calories"'+(dashboardMetric==='calories'?' selected':'')+'>估算消耗 · kcal</option><option value="durationMinutes"'+(dashboardMetric==='durationMinutes'?' selected':'')+'>估算时长 · 分钟</option><option value="volume"'+(dashboardMetric==='volume'?' selected':'')+'>训练容量 · kg</option></select></label><span class="chart-legend"><i></i>'+(dashboardDemo?'示例训练数据':'已完成的训练')+'</span></div>'+renderTrend(points,selected.length,missing)+
+      '<details class="estimate-note"><summary>这些数据如何计算？</summary><p>热量为粗略总能耗估算（包含静息消耗），不是手表或传感器测量。使用训练开始时的体重 × MET × 估算分钟 ÷ 60；力量训练采用 3.5 MET，有氧统一假设 5 MET，热身与拉伸假设 2.3 MET。力量时长按每次动作 3 秒及已完成组之间的计划休息估算，其他环节采用计划时长。仅统计标记完成的内容，实际强度和休息会造成差异。旧记录不补算，缺失日以虚线标记并中断曲线，累计值仅合计已知部分。没有训练记录的日期显示为 0。</p><a href="https://pacompendium.com/conditioning-exercise/" target="_blank" rel="noopener">MET 参考：2024 身体活动汇编 ↗</a></details></section>'+
+      '<div class="fitness-lower"><section class="card week-card"><div class="card-title-row"><h2>本周训练</h2><span class="chip muted">'+(dashboardDemo?'示例':(state.profile?'每周 '+state.profile.frequency+' 练':'尚未设置目标'))+'</span></div>'+renderWeek(logs)+'<div class="next-workout"><div><span>'+(tn&&tn.isToday?'今日计划':'下一步')+'</span><h3>'+(dashboardDemo?'安排好节奏，持续训练':tn?esc(tn.day.label):state.profile?'生成你的训练计划':'建立你的训练档案')+'</h3><p>'+(dashboardDemo?'可切回我的数据，开始记录真实训练。':tn?esc(tn.day.weekday)+' · '+tn.day.totalSets+' 组 · 约 '+tn.day.estMinutes+' 分钟':'根据目标与器械，安排适合你的训练。')+'</p></div><button class="btn" data-go="'+(state.profile?'plan':'profile')+'">'+icon('arrow')+'<span>查看</span></button></div></section><section class="card habits-card"><h2>训练摘要</h2><p class="sub">近 '+dashboardRange+' 天</p><div class="summary-metric"><span>单次平均估算消耗</span><strong>'+(known.length?metricText(calories/known.length)+' kcal':'—')+'</strong></div><div class="summary-metric"><span>单次平均估算时长</span><strong>'+(timed.length?metricText(minutes/timed.length)+' 分钟':'—')+'</strong></div><div class="summary-metric"><span>热量数据完整度</span><strong>'+known.length+' / '+selected.length+' 次</strong></div></section></div>'+
+      '<section class="card history-card" aria-labelledby="historyTitle"><div class="chart-header"><div><h2 id="historyTitle">训练记录 <span class="chip muted">'+selected.length+'</span></h2><p class="sub">与上方时间范围同步</p></div><label class="history-search"><span class="sr-only">搜索训练名称或日期</span><input id="historySearch" type="search" placeholder="搜索训练名称或日期…" value="'+esc(historySearch)+'"></label></div><div id="historyContent"></div></section>';
     bindGo(v);
-    bindStart(v);
+    $('#demoToggle').addEventListener('click',function(){dashboardDemo=!dashboardDemo;historyPage=0;historySearch='';renderDashboard();});
+    $$('[data-range]',v).forEach(function(b){b.addEventListener('click',function(){dashboardRange=Number(b.dataset.range);historyPage=0;renderDashboard();});});
+    $('#chartMetric').addEventListener('change',function(){dashboardMetric=this.value;renderDashboard();});
+    var scrub=$('#chartScrub');
+    if(scrub){scrub.addEventListener('input',function(){showPoint(points,Number(this.value));});showPoint(points,points.length-1);}
+    $('#historySearch').addEventListener('input',function(){historySearch=this.value;historyPage=0;renderHistory(selected);});
+    renderHistory(selected);
+  }
+  function renderTrend(points,count,missing){
+    var metric=dashboardMetric,unit=metric==='calories'?'kcal':metric==='volume'?'kg':'分钟';
+    var max=Math.max.apply(null,points.map(function(p){return p[metric];}).concat([1]));
+    var ceiling=Math.ceil(max/4)*4;
+    var coords=points.map(function(p,i){return {x:48+i*904/(points.length-1),y:220-p[metric]/ceiling*184};});
+    var missingKey=metric==='calories'?'missing':metric==='durationMinutes'?'missingDuration':null;
+    var segments=[],segment=[];
+    coords.forEach(function(p,i){if(missingKey&&points[i][missingKey]){if(segment.length)segments.push(segment);segment=[];}else{segment.push(p);}});
+    if(segment.length)segments.push(segment);
+    var line=segments.map(function(s){return s.map(function(p,i){return(i?'L':'M')+p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' ');}).join(' ');
+    var area=segments.map(function(s){return s.map(function(p,i){return(i?'L':'M')+p.x.toFixed(1)+','+p.y.toFixed(1);}).join(' ')+' L'+s[s.length-1].x.toFixed(1)+',220 L'+s[0].x.toFixed(1)+',220 Z';}).join(' ');
+    var svg='<svg class="trend-svg" viewBox="0 0 1000 260" role="img" aria-label="近 '+dashboardRange+' 天'+(metric==='calories'?'估算消耗':metric==='volume'?'训练容量':'估算时长')+'趋势；可使用下方日期滑块查看每日数据"><defs><linearGradient id="fitnessFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="currentColor" stop-opacity=".32"/><stop offset="100%" stop-color="currentColor" stop-opacity=".02"/></linearGradient></defs>';
+    for(var i=0;i<=4;i++){var y=220-i*46;svg+='<line class="chart-gridline" x1="48" x2="952" y1="'+y+'" y2="'+y+'"/><text x="36" y="'+(y+4)+'" text-anchor="end">'+Math.round(ceiling*i/4)+'</text>';}
+    svg+='<path d="'+area+'" fill="url(#fitnessFill)"/><path d="'+line+'" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/>';
+    // Mask unknown calorie days instead of claiming missing historical values are zero.
+    points.forEach(function(p,i){if(missingKey&&p[missingKey]){var x=coords[i].x;svg+='<path d="M'+x+',36 V220" stroke="var(--muted-2)" stroke-dasharray="3 5" stroke-width="1"/>';}});
+    [0,Math.floor((points.length-1)/4),Math.floor((points.length-1)/2),Math.floor((points.length-1)*3/4),points.length-1].forEach(function(i){svg+='<text x="'+coords[i].x+'" y="248" text-anchor="middle">'+points[i].date.slice(5).replace('-','/')+'</text>';});
+    svg+='</svg>';
+    return '<div class="trend-wrap">'+svg+(!count?'<div class="chart-empty"><strong>让第一条训练记录成为起点</strong><p>完成训练后，消耗和时长会展示在这里。点击上方「查看示例」可预览图表。</p></div>':'')+'</div><div class="chart-readout" id="chartReadout" aria-live="polite"></div><label class="chart-scrubber"><span>查看每日数据</span><input id="chartScrub" type="range" min="0" max="'+(points.length-1)+'" value="'+(points.length-1)+'" aria-label="查看每日训练数据"><span>'+unit+'</span></label>';
+  }
+  function showPoint(points,index){
+    var p=points[index],metric=dashboardMetric,unit=metric==='calories'?'kcal':metric==='volume'?'kg':'分钟';
+    $('#chartReadout').innerHTML='<span>'+p.date+'</span><strong>'+(((metric==='calories'&&p.missing)||(metric==='durationMinutes'&&p.missingDuration))?'数据不完整 · 已知 '+metricText(p[metric]):metricText(p[metric]))+' '+unit+'</strong><span>'+p.sessions+' 次训练</span>';
+    $('#chartScrub').setAttribute('aria-valuetext',p.date+'，'+(metric==='calories'&&p.missing?'数据不完整，已知 ':'')+metricText(p[metric])+' '+unit);
+  }
+  function renderWeek(logs){
+    var start=new Date();start.setDate(start.getDate()-(start.getDay()+6)%7);
+    var labels=['一','二','三','四','五','六','日'];
+    return '<div class="week-days">'+labels.map(function(l,i){var d=new Date(start);d.setDate(d.getDate()+i);var key=dateKey(d),n=logs.filter(function(x){return x.date===key;}).length;return '<div class="week-day '+(n?'done':'')+' '+(key===dateKey()?'today':'')+'"><span>周'+l+'</span><div aria-label="'+key+'，'+n+' 次训练">'+(n?icon('check'):d.getDate())+'</div><small>'+(n?n+' 次':'—')+'</small></div>';}).join('')+'</div>';
+  }
+  function renderHistory(logs){
+    var M=window.FitnessMetrics;
+    var rows=logs.filter(function(l){return (String(l.label||'训练')+' '+l.date).toLowerCase().indexOf(historySearch.toLowerCase())>=0;}).sort(function(a,b){return b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0);});
+    var pages=Math.max(1,Math.ceil(rows.length/5));historyPage=Math.min(historyPage,pages-1);
+    $('#historyContent').innerHTML='<div class="table-scroll"><table><thead><tr><th scope="col">训练</th><th scope="col">日期</th><th scope="col">状态</th><th scope="col">估算时长</th><th scope="col">估算消耗</th><th scope="col">训练容量</th></tr></thead><tbody>'+rows.slice(historyPage*5,historyPage*5+5).map(function(l){return '<tr><td><span class="table-name">'+icon('equipment')+esc(l.label||'训练')+'</span></td><td>'+esc(l.date)+'</td><td><span class="record-status">'+icon('check')+'已完成</span></td><td>'+(M.finite(l.durationMinutes)?metricText(l.durationMinutes)+' 分钟':'未记录')+'</td><td>'+(M.finite(l.calories)?metricText(l.calories)+' kcal':'未记录')+'</td><td>'+metricText(Number(l.volume)||0)+' kg</td></tr>';}).join('')+(!rows.length?'<tr><td colspan="6" class="table-empty">'+(historySearch?'没有匹配的训练记录。':'这个时间范围内暂无训练记录。')+'</td></tr>':'')+'</tbody></table></div><div class="table-pagination"><span>共 '+rows.length+' 条记录'+(dashboardDemo?' · 示例数据':'')+'</span><div><span>第 '+(historyPage+1)+' / '+pages+' 页</span><button class="btn btn-sm" id="historyPrev" '+(historyPage===0?'disabled':'')+' aria-label="上一页">←</button><button class="btn btn-sm" id="historyNext" '+(historyPage+1>=pages?'disabled':'')+' aria-label="下一页">→</button></div></div>';
+    $('#historyPrev').onclick=function(){historyPage--;renderHistory(logs);};$('#historyNext').onclick=function(){historyPage++;renderHistory(logs);};
   }
 
-  function statBox(num, lbl, cls) {
-    return '<div class="stat"><div class="num ' + (cls === 'plain' ? 'plain' : '') + '">' + num + '</div><div class="lbl">' + lbl + '</div></div>';
-  }
   function quick(ic, t, view) {
-    return '<a class="quick" href="#/' + view + '"><div class="ic">' + ic + '</div><div class="t">' + t + '</div></a>';
+    var descriptions = {profile:'身体数据与训练目标', equipment:'选择实际可用的器械', plan:'查看本周训练安排', train:'逐组记录，专注当下'};
+    return '<a class="quick" href="#/' + view + '"><div class="ic">' + icon(view) + '</div><div class="quick-copy"><div class="t">' + t + '</div><span>' + descriptions[view] + '</span></div>' + icon('arrow') + '</a>';
   }
   function bindGo(root) {
     $$('[data-go]', root).forEach(function (b) {
@@ -299,7 +320,7 @@
       }).join('') + '</select>';
     }
 
-    var goalOpts = Object.keys(DB.GOALS).map(function (k) { return [k, DB.GOALS[k].emoji + ' ' + DB.GOALS[k].label]; });
+    var goalOpts = Object.keys(DB.GOALS).map(function (k) { return [k, DB.GOALS[k].label]; });
     var expOpts = Object.keys(DB.EXPERIENCE).map(function (k) { return [k, DB.EXPERIENCE[k].label]; });
     var freqOpts = [1, 2, 3, 4, 5, 6, 7].map(function (k) { return [k, '每周 ' + k + ' 次']; });
     var durOpts = [30, 45, 60, 75, 90].map(function (k) { return [k, k + ' 分钟']; });
@@ -313,7 +334,7 @@
     }).join('');
 
     v.innerHTML =
-      '<div class="card"><h2>📋 训练档案</h2><p class="sub">这些信息决定你的计划方向。填写后可在「计划」页一键生成。</p>' +
+      '<div class="card"><h2>训练档案</h2><p class="sub">这些信息决定你的计划方向。填写后可在「计划」页一键生成。</p>' +
       '<form id="profileForm">' +
       '<div class="form-grid">' +
       '<div class="field"><label>身高 (cm)</label><input type="number" name="height" min="100" max="250" step="1" placeholder="例如 175" value="' + esc(p.height || '') + '" required></div>' +
@@ -328,12 +349,17 @@
       '<div class="chip-row" id="injuryRow">' + injuryChips + '</div></div>' +
       '</div>' +
       '<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">' +
-      '<button type="submit" class="btn btn-primary" style="flex:1;min-width:160px">💾 保存档案</button>' +
+      '<button type="submit" class="btn btn-primary" style="flex:1;min-width:160px">保存档案</button>' +
       (p.height ? '<button type="button" class="btn btn-danger" id="clearProfile">清空档案</button>' : '') +
       '</div>' +
       '<p class="hint" style="margin-top:10px;font-size:12px;color:var(--muted-2)">伤病限制用于过滤承压关节的动作；如不确定请选择「无」并在训练前咨询医生。</p>' +
       '</form></div>' +
-      '<div class="card disclaimer-card"><h2>⚕️ 训练前须知</h2><p class="sub" style="margin:0">开始任何锻炼计划前，请咨询医生或专业教练；运动中如有胸痛、头晕、关节剧痛等不适，请立即停止。本应用不构成医疗建议。</p></div>';
+      '<div class="card disclaimer-card"><h2>训练前须知</h2><p class="sub" style="margin:0">开始任何锻炼计划前，请咨询医生或专业教练；运动中如有胸痛、头晕、关节剧痛等不适，请立即停止。本应用不构成医疗建议。</p></div>';
+
+    $$('.field', v).forEach(function (field) {
+      var control = $('input, select', field), label = $('label', field);
+      if (control && label) { control.id = 'profile-' + control.name; label.htmlFor = control.id; }
+    });
 
     /* 伤病 chip 交互（「无」与其余互斥） */
     var selected = inj.slice();
@@ -363,7 +389,7 @@
     $('#profileForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var f = e.target;
-      var height = parseFloat(f.height.value), weight = parseFloat(f.weight.value), age = parseFloat(f.age.value);
+      var height = parseFloat(f.elements.namedItem('height').value), weight = parseFloat(f.elements.namedItem('weight').value), age = parseFloat(f.elements.namedItem('age').value);
       if (!(height >= 100 && height <= 250)) { toast('身高需在 100-250 cm 之间'); return; }
       if (!(weight >= 30 && weight <= 250)) { toast('体重需在 30-250 kg 之间'); return; }
       if (!(age >= 10 && age <= 90)) { toast('年龄需在 10-90 岁之间'); return; }
@@ -371,12 +397,12 @@
       if (injs.indexOf('none') < 0 && injs.length === 0) { injs = ['none']; }
       state.profile = {
         height: height, weight: weight, age: age,
-        gender: f.gender.value, goal: f.goal.value, experience: f.experience.value,
-        frequency: parseInt(f.frequency.value, 10), duration: parseInt(f.duration.value, 10),
+        gender: f.elements.namedItem('gender').value, goal: f.elements.namedItem('goal').value, experience: f.elements.namedItem('experience').value,
+        frequency: parseInt(f.elements.namedItem('frequency').value, 10), duration: parseInt(f.elements.namedItem('duration').value, 10),
         injuries: injs
       };
       saveState();
-      toast('✅ 档案已保存');
+      toast('档案已保存');
       go('dashboard');
     });
 
@@ -402,7 +428,7 @@
       return DB.EQUIPMENT.filter(function (e) { return e.group === group; }).map(function (e) {
         var on = selKeys.indexOf(e.key) >= 0;
         return '<div class="equip-item' + (on ? ' on' : '') + '" data-eq="' + e.key + '" role="button" tabindex="0">' +
-          '<div class="ic">' + e.icon + '</div><div class="nm">' + e.name + '</div></div>';
+          '<div class="ic">' + icon(e.group === 'cardio' ? 'train' : 'equipment') + '</div><div class="nm">' + e.name + '</div></div>';
       }).join('');
     }
 
@@ -412,9 +438,9 @@
     }).join('');
 
     v.innerHTML =
-      '<div class="card"><h2>🏋️ 器械库</h2><p class="sub">勾选你健身房实际可用的器械 —— 计划只会从这些器械中选动作。变更后请重新生成计划。</p>' +
+      '<div class="card"><h2>器械库</h2><p class="sub">勾选你健身房实际可用的器械 —— 计划只会从这些器械中选动作。变更后请重新生成计划。</p>' +
       '<div class="equip-group-title">自重 · 始终可用</div>' +
-      '<div class="equip-grid"><div class="equip-item on locked"><div class="ic">' + DB.BODYWEIGHT.icon + '</div><div class="nm">' + DB.BODYWEIGHT.name + '</div></div></div>' +
+      '<div class="equip-grid"><div class="equip-item on locked"><div class="ic">' + icon('train') + '</div><div class="nm">' + DB.BODYWEIGHT.name + '</div></div></div>' +
       '<div class="equip-group-title">力量器械</div>' +
       '<div class="equip-grid">' + grid('strength') + '</div>' +
       '<div class="equip-group-title">有氧器械</div>' +
@@ -423,7 +449,7 @@
       '<div class="equip-grid">' + grid('aux') + '</div>' +
       '</div>' +
 
-      '<div class="card"><h2>➕ 自定义器械</h2><p class="sub">健身房有特殊器械？添加后可按「等价类型」参与计划选动作。</p>' +
+      '<div class="card"><h2>自定义器械</h2><p class="sub">健身房有特殊器械？添加后可按「等价类型」参与计划选动作。</p>' +
       '<div class="custom-form">' +
       '<input type="text" id="customName" placeholder="器械名称，如：坐式推胸器" maxlength="20">' +
       '<select id="customEq">' + DB.EQUIPMENT.map(function (e) { return '<option value="' + e.key + '">等价于 ' + e.name + '</option>'; }).join('') + '</select>' +
@@ -434,11 +460,13 @@
 
     /* 勾选/取消（立即保存） */
     $$('.equip-item[data-eq]', v).forEach(function (item) {
+      item.setAttribute('aria-pressed', String(item.classList.contains('on')));
       function toggle() {
         var k = item.getAttribute('data-eq');
         var i = selKeys.indexOf(k);
         if (i >= 0) { selKeys.splice(i, 1); item.classList.remove('on'); }
         else { selKeys.push(k); item.classList.add('on'); }
+        item.setAttribute('aria-pressed', String(item.classList.contains('on')));
         state.equipment = selKeys;
         saveState();
       }
@@ -447,13 +475,15 @@
     });
 
     /* 自定义器械 */
+    $('#customName').setAttribute('aria-label', '自定义器械名称');
+    $('#customEq').setAttribute('aria-label', '等价器械类型');
     $('#addCustom').addEventListener('click', function () {
       var name = $('#customName').value.trim();
       if (!name) { toast('请输入器械名称'); return; }
       state.custom.push({ id: 'c' + Date.now(), name: name, equivalent: $('#customEq').value });
       saveState();
       renderEquipment();
-      toast('✅ 已添加自定义器械');
+      toast('已添加自定义器械');
     });
     $$('[data-delcustom]', v).forEach(function (b) {
       b.addEventListener('click', function () {
@@ -476,7 +506,7 @@
   function renderPlan() {
     var v = $('#view-plan');
     if (!state.profile) {
-      v.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">📋</div>' +
+      v.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon"></div>' +
         '<p>生成计划前，需要先填写你的训练档案。</p>' +
         '<button class="btn btn-primary" data-go="profile">去填写档案</button></div></div>';
       bindGo(v);
@@ -489,15 +519,15 @@
     if (!plan) {
       var equipWarn = '';
       if (!hasEquipment) {
-        equipWarn = '<div class="warn-box">⚠️ 当前未勾选任何器械，将按“仅自重”训练兜底。建议先在「器械」页勾选实际可用器械（如哑铃、固定器械、绳索、杠铃等），再生成计划。</div>';
+        equipWarn = '<div class="warn-box">当前未勾选任何器械，将按“仅自重”训练兜底。建议先在「器械」页勾选实际可用器械（如哑铃、固定器械、绳索、杠铃等），再生成计划。</div>';
       } else if (state.equipment.length === 0) {
-        equipWarn = '<div class="warn-box">⚠️ 当前仅勾选了自定义器械，将按“仅自重 + 自定义器械”生成计划。建议同时勾选实际可用的标准器械。</div>';
+        equipWarn = '<div class="warn-box">当前仅勾选了自定义器械，将按“仅自重 + 自定义器械”生成计划。建议同时勾选实际可用的标准器械。</div>';
       }
       v.innerHTML =
-        '<div class="card"><h2>🗓️ 一周训练计划</h2><p class="sub">规则引擎会根据你的档案、目标、频率、时长与可用器械，确定性地生成 7 天一周的排期 —— 同样的配置永远得到同样的计划。</p>' +
+        '<div class="card"><h2>一周训练计划</h2><p class="sub">规则引擎会根据你的档案、目标、频率、时长与可用器械，确定性地生成 7 天一周的排期 —— 同样的配置永远得到同样的计划。</p>' +
         equipWarn +
         '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
-        '<button class="btn btn-primary" id="genPlan">✨ 生成一周计划</button>' +
+        '<button class="btn btn-primary" id="genPlan">生成一周计划</button>' +
         '<button class="btn btn-ghost" data-go="equipment">去勾选器械</button></div>' +
         '<p class="hint" style="margin-top:10px;color:var(--muted-2);font-size:12px">档案：' + esc(DB.GOALS[state.profile.goal].label) + ' · 每周 ' + state.profile.frequency + ' 练 · 单次 ' + state.profile.duration + ' 分钟' +
         (state.profile.injuries.indexOf('none') < 0 ? ' · 伤病限制：' + state.profile.injuries.map(function (k) { return DB.INJURIES[k]; }).join('、') : '') + '</p>' +
@@ -543,23 +573,23 @@
       if (s.kind === 'cardio') {
         return '<div class="step-card cardio">' +
           '<div class="idx">♥</div>' +
-          '<div class="body"><div class="name">🔥 ' + esc(s.name) + '</div>' +
+          '<div class="body"><div class="name">' + esc(s.name) + '</div>' +
           '<div class="meta"><span class="chip warn">有氧燃脂</span><span class="chip muted">' + esc(s.equipmentName) + '</span>' +
           '<span class="chip info">' + s.minutes + ' 分钟</span></div>' +
           '<div class="rir">' + esc(s.note) + '</div></div></div>';
       }
       return '<div class="step-card ' + s.kind + '">' +
         '<div class="idx">' + (s.kind === 'warmup' ? '热' : '伸') + '</div>' +
-        '<div class="body"><div class="name">' + (s.kind === 'warmup' ? '🌡️ ' : '🧘 ') + esc(s.name) + '</div>' +
+        '<div class="body"><div class="name">' + (s.kind === 'warmup' ? '' : '') + esc(s.name) + '</div>' +
         '<div class="meta"><span class="chip info">' + s.minutes + ' 分钟</span></div>' +
         '<div class="rir">' + esc(s.note) + '</div></div></div>';
     }).join('');
 
-    var warns = plan.warnings.map(function (w) { return '<div class="warn-box">⚠️ ' + esc(w) + '</div>'; }).join('');
+    var warns = plan.warnings.map(function (w) { return '<div class="warn-box">' + esc(w) + '</div>'; }).join('');
 
     v.innerHTML =
       '<div class="card"><div class="card-title-row">' +
-      '<h2>🗓️ 一周训练计划</h2>' +
+      '<h2>一周训练计划</h2>' +
       '<button class="btn btn-ghost btn-sm" id="regen">↻ 重新生成</button>' +
       '</div>' +
       '<p class="sub">基于你的档案与器械，确定性生成 · 计划快照于 ' + esc(plan.generatedAt.replace('T', ' ').slice(0, 16)) + '</p>' +
@@ -598,7 +628,7 @@
     state.plan = plan;
     planDaySel = null;
     saveState();
-    toast('✅ 一周计划已生成');
+    toast('一周计划已生成');
     return plan;
   }
 
@@ -611,7 +641,7 @@
       return;
     }
     if (!state.plan) {
-      v.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">⚡</div>' +
+      v.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon"></div>' +
         '<p>还没有可执行的计划。先去生成一周计划吧。</p>' +
         '<button class="btn btn-primary" data-go="plan">去生成计划</button></div></div>';
       bindGo(v);
@@ -627,11 +657,11 @@
     }).join('');
 
     v.innerHTML =
-      '<div class="card"><h2>⚡ 训练执行</h2><p class="sub">选择训练日，进入逐组执行模式：记录重量/次数，组间自动休息倒计时。</p>' +
+      '<div class="card"><h2>训练执行</h2><p class="sub">选择训练日，进入逐组执行模式：记录重量/次数，组间自动休息倒计时。</p>' +
       '<div class="day-tabs">' + chips + '</div>' +
       '<button class="btn btn-primary btn-block" id="startDay">▶ 开始训练</button>' +
       '</div>' +
-      '<div class="card disclaimer-card"><h2>⚕️ 训练安全提醒</h2><p class="sub" style="margin:0">量力而行，动作规范优先；不适立即停止并咨询医生。</p></div>';
+      '<div class="card disclaimer-card"><h2>训练安全提醒</h2><p class="sub" style="margin:0">量力而行，动作规范优先；不适立即停止并咨询医生。</p></div>';
 
     $$('.day-tab', v).forEach(function (b) {
       b.addEventListener('click', function () {
@@ -673,7 +703,7 @@
 
     state.session = {
       planIndex: dayIndex, dayLabel: day.weekday, label: day.label, type: day.type,
-      goal: plan.goal, createdAt: Date.now(),
+      goal: plan.goal, createdAt: Date.now(), weightKg: state.profile ? state.profile.weight : null,
       units: units, cur: 0
     };
     saveState();
@@ -745,7 +775,7 @@
         '<div id="altPanel" class="alt-panel hidden"><h4>🔄 同肌群替代动作（优先不同器械）</h4><div id="altList"></div></div>' +
         '</div>';
     } else {
-      var icon = unit.kind === 'warmup' ? '🌡️' : (unit.kind === 'cardio' ? '🔥' : '🧘');
+      var icon = unit.kind === 'warmup' ? '' : (unit.kind === 'cardio' ? '' : '');
       unitHtml =
         '<div class="card" style="border-color:rgba(90,200,250,.4);text-align:center;padding:30px 18px">' +
         '<div style="font-size:44px;margin-bottom:8px">' + icon + '</div>' +
@@ -965,13 +995,15 @@
           return { w: s.weight, r: s.reps };
         });
         units.push({ name: u.name, equipment: u.equipment, muscle: u.muscle, sets: sets });
-      } else if (u.kind === 'cardio') {
+      } else if (u.kind === 'cardio' && u.sets.some(function(s){ return s.done; })) {
         cardioMin += (u.minutes || 0);
       }
     });
 
+    var estimate = window.FitnessMetrics.estimate(sess);
     state.logs.push({
       date: dateKey(), dayLabel: sess.dayLabel, label: sess.label, goal: sess.goal,
+      durationMinutes: estimate.durationMinutes, calories: estimate.calories, weightKg: estimate.weightKg, estimateVersion: estimate.estimateVersion, strengthSets: estimate.strengthSets,
       units: units, cardioMin: cardioMin, totalSets: prog.done, volume: volume, ts: Date.now()
     });
     state.session = null;
@@ -986,9 +1018,10 @@
 
     v.innerHTML =
       '<div class="card finish-hero">' +
-      '<div class="big">🎉</div>' +
+      '<div class="big"></div>' +
       '<h2>训练完成！</h2>' +
       '<p style="color:var(--muted);font-size:14px">' + sess.dayLabel + ' · ' + sess.label + ' · 恭喜你坚持完成了今天的计划</p>' +
+      '<p class="finish-energy">估算消耗 <strong>' + (estimate.calories == null ? '—' : estimate.calories + ' kcal') + '</strong> · 估算时长 ' + Math.round(estimate.durationMinutes) + ' 分钟</p>' +
       '<div class="finish-stats">' +
       '<div class="stat"><div class="num">' + prog.done + '</div><div class="lbl">完成组数</div></div>' +
       '<div class="stat"><div class="num">' + (volume ? volume.toLocaleString() + 'kg' : '—') + '</div><div class="lbl">总容量</div></div>' +
@@ -1005,6 +1038,11 @@
   /* ---------------- 启动 ---------------- */
   function init() {
     renderNavs();
+    $('#sidebarToggle').addEventListener('click', function(){var collapsed = document.body.classList.toggle('sidebar-collapsed');this.setAttribute('aria-expanded', String(!collapsed));});
+    var themeButton = $('#themeToggle');
+    function themeLabel(){themeButton.textContent = document.documentElement.dataset.theme === 'light' ? '切换深色' : '切换浅色';}
+    themeLabel();
+    themeButton.addEventListener('click', function(){var next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';document.documentElement.dataset.theme = next;try{localStorage.setItem('afd_theme',next);}catch(e){}themeLabel();});
     window.addEventListener('hashchange', route);
     route();
 

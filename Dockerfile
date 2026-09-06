@@ -7,6 +7,7 @@ FROM nginx:1.27-alpine
 # 站点配置与静态资源
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY index.html /usr/share/nginx/html/index.html
+COPY favicon.svg /usr/share/nginx/html/favicon.svg
 COPY css /usr/share/nginx/html/css
 COPY js /usr/share/nginx/html/js
 COPY scripts /usr/share/nginx/html/scripts

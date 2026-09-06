@@ -21,7 +21,7 @@
 - 纯 HTML / CSS / JavaScript（原生，无框架、无构建工具、无 CDN 依赖）
 - nginx:1.27-alpine（Docker 镜像约 50MB）
 - 移动端优先（底部 Tab 导航），桌面端自适应（顶部导航 + 多列布局）
-- 深色健身风 UI：自绘样式，零外部字体/图标资源（Emoji 图标）
+- shadcn/ui 风格：黑白灰配色、细边框卡片、线性 SVG 图标、响应式训练工作台；保持原生 HTML/CSS/JS，无新增依赖
 
 ## 快速开始
 
