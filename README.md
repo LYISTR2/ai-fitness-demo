@@ -1,27 +1,35 @@
 # 健身计划 · 本地规则训练助手
 
-一个可公网部署的中文健身计划助手 Web Demo（本地确定性规则生成，非在线大模型）。纯前端实现（HTML/CSS/JavaScript），
-由 nginx Docker 容器托管，**不依赖 npm / Node 构建链**，数据全部保存在浏览器 localStorage。
+一个可公网部署的中文健身计划助手（本地确定性规则生成，非在线大模型）。纯前端实现（HTML/CSS/JavaScript），由 nginx Docker 容器托管，**不依赖 npm / Node 构建链**，数据全部保存在浏览器 localStorage。也提供离线 Android WebView 版本。
+
+![首页](docs/screenshots/home-phone.jpg)
+![一周计划](docs/screenshots/plan-phone.jpg)
+![训练执行](docs/screenshots/train-phone.jpg)
+
+<p align="center"><img src="docs/screenshots/home-desktop.jpg" alt="桌面端首页" width="920"></p>
+
+截图来自当前界面的演示档案（增肌 / 中级 / 每周 4 练），不是真实训练历史。训练页为深色记录台，日常页为浅色。
 
 ## 功能（真实可交互 MVP）
 
 | 模块 | 说明 |
 | --- | --- |
-| 🏠 首页仪表盘 | 档案摘要、今日/下一训练日、累计组数、完成次数、本周进度、连续打卡 |
+| 🏠 首页仪表盘 | 今日训练主卡、本周日程、累计组数、完成次数、趋势与记录 |
 | 📋 档案录入 | 身高、体重、年龄、性别、目标（增肌/增力/减脂/体能塑形）、经验、每周次数、单次时长、伤病限制（多选，自动过滤承压动作） |
 | 🏋️ 器械库 | 16 类器械勾选 + 自定义器械添加（可指定「等价类型」参与计划选动作），自重始终可用 |
 | 🗓️ 一周计划 | 确定性规则引擎：按档案 → 目标 → 频率分化（全身/推拉腿/上下肢/恢复日）→ 时长定动作数 → 器械池选动作，生成 7 天排期。**同样配置永远得到同样计划** |
-| ⚡ 训练执行 | 逐组完成：记录重量/次数（自动提示上次重量）、组间休息倒计时（环形进度 + 结束提示音）、可暂停/跳过 |
+| ⚡ 训练执行 | 逐组完成：记录重量/次数（自动提示上次重量）、组间休息倒计时、可暂停/跳过/撤销 |
 | 🔄 替代动作 | 器械被占用时，一键提供同肌群替代动作（优先不同器械、过滤伤病与难度） |
 | 💾 本地存储 | 档案、器械、计划、训练历史、进行中的训练进度全部持久化，刷新不丢失 |
-| ⚕️ 免责声明 | 首次访问弹窗 + 各页面页脚常驻声明，明确"不构成医疗建议" |
+| ⚕️ 免责声明 | 首次访问弹窗 + 各页面页脚常驻声明，明确「不构成医疗建议」 |
 
 ## 技术栈
 
 - 纯 HTML / CSS / JavaScript（原生，无框架、无构建工具、无 CDN 依赖）
 - nginx:1.27-alpine（Docker 镜像约 50MB）
 - 移动端优先（底部 Tab 导航），桌面端自适应（顶部导航 + 多列布局）
-- shadcn/ui 风格：黑白灰配色、细边框卡片、线性 SVG 图标、响应式训练工作台；保持原生 HTML/CSS/JS，无新增依赖
+- 日常浅色 / 训练深色；强调色电光绿；线性 SVG 图标
+- Android：AndroidX WebViewAssetLoader 离线加载内置页面，构建时同步网页资源
 
 ## 快速开始
 
@@ -34,6 +42,8 @@ docker compose up -d --build
 - 宿主机端口：**18088**（已在 docker-compose.yml 映射）
 - 容器名：`ai-fitness-demo-web`
 - 健康检查：`docker compose ps` 中 STATUS 显示 `healthy` 即就绪
+
+也可以直接用浏览器打开 `index.html`。Android 构建见 [ANDROID.md](ANDROID.md)。
 
 ### 常用命令
 
@@ -48,15 +58,18 @@ docker compose up -d --build   # 更新后重建
 ## 目录结构
 
 ```
-/opt/ai-fitness-demo
+.
 ├── index.html            # 单页入口 + 免责声明弹窗
-├── css/style.css         # 全部样式（移动优先）
+├── css/                  # 样式（tokens / 仪表盘 / 训练台 / 动效）
 ├── js/
-│   ├── exercises.js      # 动作库（90+ 动作）、器械、目标/分化常量
+│   ├── exercises.js      # 动作库、器械、目标/分化常量
 │   ├── plan.js           # 确定性计划引擎（纯函数，可单测）
-│   └── app.js            # 状态管理、路由、5 个视图、训练执行、倒计时
-├── scripts/smoke-test.js # Node 冒烟测试（验证引擎规则）
-├── nginx.conf            # 站点配置（gzip/缓存/安全头）
+│   ├── metrics.js        # 训练统计估算
+│   └── app.js            # 状态管理、路由、训练执行
+├── android/              # 离线 Android 容器（构建时同步网页资源）
+├── docs/screenshots/     # README 截图
+├── scripts/              # Node 冒烟测试
+├── nginx.conf
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
@@ -81,10 +94,11 @@ docker compose up -d --build   # 更新后重建
 ## 测试
 
 ```bash
-cd /opt/ai-fitness-demo
-node --check js/exercises.js && node --check js/plan.js && node --check js/app.js   # 语法检查
-node scripts/smoke-test.js                                                           # 引擎规则冒烟测试
-docker compose config -q                                                             # compose 配置校验
+node --check js/exercises.js && node --check js/plan.js && node --check js/app.js
+node scripts/smoke-test.js
+node scripts/metrics-test.js
+node scripts/plan-v2-test.js
+docker compose config -q
 ```
 
 ## 医疗免责声明
