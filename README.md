@@ -1,6 +1,6 @@
-# 炼炼 · AI 健身房训练助手
+# 健身计划 · 本地规则训练助手
 
-一个可公网部署的中文 AI 健身房训练计划助手 Web Demo。纯前端实现（HTML/CSS/JavaScript），
+一个可公网部署的中文健身计划助手 Web Demo（本地确定性规则生成，非在线大模型）。纯前端实现（HTML/CSS/JavaScript），
 由 nginx Docker 容器托管，**不依赖 npm / Node 构建链**，数据全部保存在浏览器 localStorage。
 
 ## 功能（真实可交互 MVP）

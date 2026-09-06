@@ -1,0 +1,13 @@
+/* Mobile touch targets and locally drawn brand assets. */
+.skip-link{background:var(--accent);color:var(--bg)}
+@media(max-width:899px){
+  .btn,.day-tab,.range-switch button,.set-list .rec{min-height:44px}
+  input,select,textarea{font-size:16px!important}
+  .bottomnav a{min-height:50px}
+  .brand-logo{color:#d5fa5b;background:#18181b;border-radius:12px;padding:6px;width:36px;height:36px}
+  .brand-logo svg{width:24px;height:24px}
+  .modal{max-height:85dvh}
+  .rest-btns .btn{min-width:104px}
+  .dash-heading{flex-wrap:wrap;gap:14px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

@@ -1,0 +1,19 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.lyistr2.lianlian'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.lyistr2.lianlian'
+        minSdk 26
+        targetSdk 35
+        versionCode 2
+        versionName '1.1.0'
+    }
+    buildTypes { release { minifyEnabled false } }
+}
+dependencies { implementation 'androidx.webkit:webkit:1.12.1' }
+tasks.register('syncWebAssets', Copy) {
+    from('../..') { include 'index.html', 'favicon.svg', 'css/**', 'js/**' }
+    into 'src/main/assets'
+}
+tasks.named('preBuild').configure { dependsOn 'syncWebAssets' }

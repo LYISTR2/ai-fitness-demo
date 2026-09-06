@@ -1,0 +1,193 @@
+/* Phase3 — 动作指导页（日常浅色壳 + 电光绿强调） */
+#view-guide.view.active{
+  display:block;
+  padding-bottom:96px;
+}
+.guide-page{
+  max-width:560px;
+  margin:0 auto;
+  padding:12px 16px 24px;
+}
+.guide-topbar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:16px;
+  min-height:48px;
+}
+.guide-back{
+  flex:none;
+  width:48px;height:48px;min-width:48px;min-height:48px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  display:grid;place-items:center;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.guide-back:active{transform:scale(.97)}
+.guide-back .ui-icon{width:22px;height:22px}
+.guide-title-wrap{flex:1;min-width:0}
+.guide-kicker{
+  font-size:11px;font-weight:650;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted-2);margin:0 0 2px;
+}
+.guide-title{
+  margin:0;font-size:20px;font-weight:700;letter-spacing:-.02em;
+  color:var(--text);line-height:1.25;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+.guide-demo-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-card);
+  box-shadow:0 1px 2px rgba(18,20,26,.04);
+  overflow:hidden;
+  margin-bottom:14px;
+}
+.guide-demo-stage{
+  position:relative;
+  aspect-ratio:16/10;
+  background:linear-gradient(160deg,var(--bg2),#e8ecef);
+  display:grid;place-items:center;
+  color:var(--muted);
+}
+.guide-demo-stage.is-playing .guide-demo-pulse{
+  animation:guidePulse 1.4s ease-in-out infinite;
+}
+@keyframes guidePulse{
+  0%,100%{opacity:.55;transform:scale(1)}
+  50%{opacity:1;transform:scale(1.04)}
+}
+@media (prefers-reduced-motion:reduce){
+  .guide-demo-stage.is-playing .guide-demo-pulse{animation:none;opacity:1}
+}
+.guide-demo-placeholder{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:20px;text-align:center;
+}
+.guide-demo-placeholder .ui-icon{
+  width:64px;height:64px;color:var(--muted-2);
+}
+.guide-demo-hint{
+  font-size:13px;color:var(--muted);margin:0;font-weight:550;
+}
+.guide-demo-media{
+  width:100%;height:100%;object-fit:contain;background:#0f1216;
+  display:block;
+}
+.guide-demo-media[hidden],
+.guide-demo-placeholder[hidden]{display:none!important}
+
+.guide-controls{
+  display:flex;gap:10px;padding:12px 14px 14px;flex-wrap:wrap;
+}
+.guide-ctrl{
+  flex:1;min-width:96px;min-height:48px;height:48px;
+  border-radius:14px;
+  border:1px solid var(--border-strong);
+  background:var(--bg2);
+  color:var(--text);
+  font-size:14px;font-weight:650;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.guide-ctrl:active{transform:scale(.98)}
+.guide-ctrl.primary{
+  background:var(--accent);
+  color:var(--accent-ink);
+  border-color:transparent;
+}
+
+.guide-cues{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-card);
+  padding:16px 18px 18px;
+  margin-bottom:18px;
+}
+.guide-cues h3{
+  margin:0 0 12px;font-size:15px;font-weight:700;color:var(--text);
+}
+.guide-cues ol{
+  margin:0;padding:0 0 0 1.15em;
+  display:flex;flex-direction:column;gap:10px;
+}
+.guide-cues li{
+  font-size:14px;line-height:1.45;color:var(--text);
+  padding-left:2px;
+}
+.guide-cues li::marker{color:var(--muted-2);font-weight:700}
+
+.guide-return-bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+  background:rgba(247,248,250,.92);
+  backdrop-filter:blur(10px);
+  border-top:1px solid var(--border);
+  display:flex;justify-content:center;
+}
+.guide-return-bar .btn-return-train{
+  width:100%;max-width:560px;
+  min-height:52px;height:52px;
+  border:none;border-radius:16px;
+  background:var(--accent);color:var(--accent-ink);
+  font-size:16px;font-weight:700;letter-spacing:-.01em;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  box-shadow:0 4px 14px rgba(200,247,80,.35);
+}
+.guide-return-bar .btn-return-train:active{transform:scale(.985)}
+
+/* 训练页入口：可点的演示/要点 */
+.demo-placeholder.demo-entry{
+  cursor:pointer;
+  border-style:solid;
+  border-color:rgba(200,247,80,.35);
+  color:var(--accent);
+  transition:background .15s,border-color .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.demo-placeholder.demo-entry:hover,
+.demo-placeholder.demo-entry:focus-visible{
+  background:rgba(200,247,80,.12);
+  border-color:var(--accent);
+  outline:none;
+}
+.hevy-guide-link{
+  display:inline-flex;align-items:center;gap:4px;
+  margin-top:8px;
+  min-height:48px;padding:0 12px;
+  border-radius:12px;
+  border:1px solid var(--border-strong);
+  background:transparent;
+  color:var(--text);
+  font-size:13px;font-weight:650;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.hevy-guide-link:active{transform:scale(.98)}
+body.view-train .hevy-guide-link{
+  border-color:var(--border-strong);
+  color:var(--muted);
+}
+body.view-train .hevy-guide-link:hover{
+  color:var(--accent);
+  border-color:rgba(200,247,80,.45);
+}
+
+/* 指导页底栏：用 body.view-guide（route/setShellMode 设置），不依赖 :has() — 兼容 Android 8 WebView */
+body.view-guide .bottomnav{
+  /* desktop: keep visible; return bar above via z-index */
+}
+@media (max-width:720px){
+  body.view-guide .bottomnav{
+    opacity:.35;
+    pointer-events:none;
+  }
+  body.view-guide .guide-return-bar{
+    bottom:0;
+  }
+}

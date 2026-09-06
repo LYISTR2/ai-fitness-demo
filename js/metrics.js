@@ -11,7 +11,7 @@
       if(u.kind==='exercise'){
         strengthSets+=done.length;
         // 3 seconds per recorded rep; use lower prescribed target only if reps absent.
-        done.forEach(function(s){var r=parseFloat(s.reps);if(!Number.isFinite(r)||r<0)r=parseFloat(u.reps)||8;m+=r*3/60;});
+        done.forEach(function(s){var r=parseFloat(s.reps);if(!Number.isFinite(r)||r<0)r=parseFloat(u.reps)||8;var timed=s.repUnit?s.repUnit==='秒':u.repUnit==='秒'||/秒/.test(u.reps);m+=r*(timed?1:3)/60;});
         m+=Math.max(0,done.length-1)*(Number(u.rest)||0)/60;
         met=3.5;
       }else{m=Math.max(0,Number(u.minutes)||0);met=u.kind==='cardio'?5:2.3;}

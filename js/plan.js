@@ -1,5 +1,5 @@
 /* ============================================================
-   炼炼 · AI 健身房训练助手 — plan.js
+   健身计划 · 本地规则训练助手 — plan.js
    确定性一周训练计划引擎（纯函数，无 DOM 依赖）
    相同 档案 + 器械 输入 → 永远输出相同计划
    ============================================================ */
@@ -105,8 +105,14 @@
     return map;
   }
 
-  function exerciseStep(ex, goal, muscle) {
+  function exerciseStep(ex, goal, muscle, profile) {
     var cfg = DB.GOALS[goal];
+    profile = profile || {};
+    var starter = profile.experience === 'novice';
+    var sets = starter ? 2 : Math.min(cfg.sets, 4);
+    if (profile.load === 'light') { sets = Math.max(2, sets - 1); }
+    if (profile.load === 'volume' && !starter) { sets = Math.min(5, sets + 1); }
+    var timed = ex.id === 'plank' || ex.id === 'side-plank';
     var rest = (ex.type === 'compound') ? cfg.rest : Math.max(30, cfg.rest - 45);
     return {
       kind: 'exercise',
@@ -117,10 +123,11 @@
       muscle: muscle,
       muscleName: DB.MUSCLES[muscle] || muscle,
       type: ex.type,
-      sets: cfg.sets,
-      reps: cfg.reps,
+      sets: sets,
+      reps: timed ? '30-45 秒' : (starter && goal === 'strength' ? '8-12' : cfg.reps),
+      repUnit: timed ? '秒' : '次',
       rest: rest,
-      rir: cfg.rir
+      rir: starter || profile.load === 'light' ? '保留约 3 次余力，以动作稳定为先' : '保留约 2-3 次余力，不必每组做到力竭'
     };
   }
 
@@ -161,11 +168,11 @@
     var inj = new Set(injuries || []);
     coreIds.forEach(function (id) {
       if (chosen >= 3) { return; }
-      var ex = DB.EXERCISES.filter(function (e) { return e.id === id; })[0];
+      var ex = poolArr.filter(function (e) { return e.id === id; })[0];
       if (!ex) { return; }
       var ok = !ex.joints.some(function (j) { return inj.has(j); });
       if (!ok) { return; }
-      steps.push({ kind: 'exercise', id: ex.id, name: ex.name, equipment: ex.equipment, equipmentName: equipName(ex.equipment), muscle: 'core', muscleName: '核心', type: 'core', sets: 3, reps: '30-45 秒', rest: 30, rir: '保持稳定核心，不塌腰' });
+      steps.push({ kind: 'exercise', id: ex.id, name: ex.name, equipment: ex.equipment, equipmentName: equipName(ex.equipment), muscle: 'core', muscleName: '核心', type: 'core', sets: 2, reps: /plank/.test(ex.id) ? '30-45 秒' : '8-12', repUnit: /plank/.test(ex.id) ? '秒' : '次', rest: 30, rir: '保持稳定核心，不塌腰' });
       chosen++;
     });
     steps.push(stretchStep());
@@ -173,6 +180,16 @@
   }
 
   /* 主入口：确定性生成一周计划 */
+  function estimateMinutes(steps) {
+    return steps.reduce(function (sum, s) {
+      if (s.kind !== 'exercise') { return sum + (s.minutes || 0); }
+      var values = String(s.reps).match(/\d+/g) || ['10'];
+      var reps = Number(values[values.length - 1]);
+      var seconds = s.repUnit === '秒' || /秒/.test(s.reps) ? reps : reps * 3;
+      return sum + (s.sets * seconds + Math.max(0, s.sets - 1) * s.rest) / 60 + 1;
+    }, 0);
+  }
+
   function generate(profile, equipmentKeys, customEquipment) {
     var goal = profile.goal;
     var cfg = DB.GOALS[goal];
@@ -193,7 +210,10 @@
     var baseHash = hash(JSON.stringify({ profile: profile, eq: eqKeys }));
     var n = DB.EX_PER_SESSION[duration] || (duration < 45 ? 4 : (duration < 75 ? 7 : 8));
 
-    var dayTypes = DB.SPLIT[freq];
+    var dayTypes = DB.SPLIT[freq].slice();
+    if (profile.split === 'fullbody' || ((!profile.split || profile.split === 'auto') && profile.experience === 'novice' && freq <= 3)) {
+      dayTypes = dayTypes.map(function (t) { return t === 'recovery' ? t : 'fullbody'; });
+    }
     var days = [];
     var warnings = [];
 
@@ -207,6 +227,8 @@
     var cardioPool = pool.filter(function (e) { return e.type === 'cardio'; });
 
     var slots = FREQ_SLOTS[freq] || FREQ_SLOTS[3];
+    var selected = Array.from(new Set(profile.trainingDays || [])).filter(function (d) { return Number.isInteger(d) && d >= 0 && d < 7; }).sort();
+    if (selected.length === freq) { slots = selected; }
     for (var i = 0; i < slots.length; i++) {
       var idx = slots[i];
       var type = dayTypes[i];
@@ -230,19 +252,19 @@
             var ex = rotatePick(list, offset + round * 5, used);
             if (!ex) { break; }
             used.add(ex.id);
-            steps.push(exerciseStep(ex, goal, muscle));
+            steps.push(exerciseStep(ex, goal, muscle, profile));
             round++;
           }
         });
 
         /* 若某些肌群候选不足，用其余肌群的动作补齐到目标数量 */
         if (steps.length - 1 < n) {
-          var allMuscles = Object.keys(map).sort();
+          var allMuscles = Object.keys(dt.focus).filter(function (m) { return map[m]; }).sort();
           var fi = 0, guard = 0;
-          while (steps.length - 1 < n && guard < 200) {
+          while (allMuscles.length && steps.length - 1 < n && guard < 200) {
             var m = allMuscles[fi % allMuscles.length];
             var ex = rotatePick(map[m] || [], offset + round * 5 + guard, used);
-            if (ex) { used.add(ex.id); steps.push(exerciseStep(ex, goal, m)); round++; }
+            if (ex) { used.add(ex.id); steps.push(exerciseStep(ex, goal, m, profile)); round++; }
             fi++; guard++;
           }
         }
@@ -257,18 +279,19 @@
         steps.push(stretchStep());
       }
 
-      var totalSets = 0;
-      var estMin = 0;
-      steps.forEach(function (s) {
-        if (s.kind === 'exercise') {
-          totalSets += s.sets;
-          estMin += s.sets * (s.rest + 50) / 60 + 1;
-        } else {
-          estMin += s.minutes || 0;
-        }
-      });
-      /* 热身只计入一次，且估算不超过用户设定时长 */
-      estMin = Math.round(Math.min(estMin, duration));
+      var strength = steps.filter(function (s) { return s.kind === 'exercise'; });
+      strength.sort(function (a, b) { return (a.type === 'compound' ? 0 : 1) - (b.type === 'compound' ? 0 : 1); });
+      steps = steps.filter(function (s) { return s.kind === 'warmup'; }).concat(strength, steps.filter(function (s) { return s.kind !== 'warmup' && s.kind !== 'exercise'; }));
+      while (estimateMinutes(steps) > duration) {
+        var adjustable = steps.filter(function (s) { return s.kind === 'exercise' && s.sets > 2; }).pop();
+        if (adjustable) { adjustable.sets--; continue; }
+        var removable = steps.filter(function (s) { return s.kind === 'exercise'; }).pop();
+        if (!removable) { break; }
+        steps.splice(steps.indexOf(removable), 1);
+      }
+      var totalSets = steps.reduce(function (n, s) { return n + (s.kind === 'exercise' ? s.sets : 0); }, 0);
+      var estMin = Math.ceil(estimateMinutes(steps));
+      if (!totalSets) { warnings.push(DB.WEEKDAYS_CN[idx] + '缺少适合本日肌群的动作，请调整器械或训练分化；不要为生成动作而放宽伤病限制。'); }
 
       days.push({
         index: idx,
@@ -286,7 +309,8 @@
       ok: true,
       goal: goal,
       generatedAt: new Date().toISOString(),
-      profile: profile,
+      profile: JSON.parse(JSON.stringify(profile)),
+      version: 2,
       equipmentUsed: eqKeys,
       days: days,
       warnings: warnings
@@ -336,6 +360,8 @@
   }
 
   var PlanEngine = {
+    estimateMinutes: estimateMinutes,
+    defaultDays: function (frequency) { return (FREQ_SLOTS[frequency] || FREQ_SLOTS[3]).slice(); },
     generate: generate,
     alternativesFor: alternativesFor,
     hash: hash,

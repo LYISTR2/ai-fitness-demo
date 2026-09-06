@@ -1,0 +1,62 @@
+/* Phase1 design tokens — electric green + daily light / train graphite */
+:root,
+:root[data-theme=light],
+:root[data-theme=dark]{
+  --bg-daily:#F7F8FA;
+  --bg-train:#14171B;
+  --card:#fff;
+  --accent:#C8F750;
+  --accent-ink:#182003;
+  --accent-2:#B8E63A;
+  --accent-dim:#EFF8D4;
+  --radius-card:22px;
+  --text:#12141A;
+  --muted:#5C6370;
+  --muted-2:#8B929E;
+  --border:#E6E8EC;
+  --border-strong:#D5D8DE;
+  --bg:var(--bg-daily);
+  --bg2:#EEF0F3;
+  --card2:#F0F2F5;
+  --sidebar:#fff;
+  --input:#fff;
+  --chart:#5C6370;
+  --train-card:#1C2128;
+  --train-elevated:#252A32;
+}
+
+body.view-daily{
+  --bg:var(--bg-daily);
+  --bg2:#EEF0F3;
+  --card:#fff;
+  --card2:#F0F2F5;
+  --text:#12141A;
+  --muted:#5C6370;
+  --muted-2:#8B929E;
+  --border:#E6E8EC;
+  --border-strong:#D5D8DE;
+  --sidebar:#fff;
+  --input:#fff;
+  --chart:#5C6370;
+  background:var(--bg-daily);
+  color:var(--text);
+  color-scheme:light;
+}
+
+body.view-train{
+  --bg:var(--bg-train);
+  --bg2:#1C2128;
+  --card:#1C2128;
+  --card2:#252A32;
+  --text:#F4F5F7;
+  --muted:#A8B0BD;
+  --muted-2:#7A8494;
+  --border:#2A3038;
+  --border-strong:#3A424E;
+  --sidebar:#14171B;
+  --input:#14171B;
+  --chart:#C8F750;
+  background:var(--bg-train);
+  color:var(--text);
+  color-scheme:dark;
+}

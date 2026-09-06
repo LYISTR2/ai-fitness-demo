@@ -1,5 +1,5 @@
 /* ============================================================
-   炼炼 · AI 健身房训练助手 — exercises.js
+   健身计划 · 本地规则训练助手 — exercises.js
    器械定义 / 动作数据库 / 目标配置 / 训练分化
    纯数据 + 确定性规则常量，浏览器与 Node 双端可用
    ============================================================ */
@@ -108,10 +108,13 @@ var WEEKDAYS_CN = ['周一', '周二', '周三', '周四', '周五', '周六', '
  * level     —— 难度 1 新手友好 ~ 3 进阶
  * type      —— compound 复合 / isolation 孤立 / cardio 有氧 / core 核心
  * goals     —— 适合的目标；缺省表示所有目标可用
+ * cues      —— 可选，动作要点字符串数组（3–5 条）；缺省由 getExerciseCues 给默认模板
+ * media     —— 可选，{ type:'video'|'gif'|'image', src:'相对路径' }；仅本地 assets，禁止外链
  */
 var EXERCISES = [
   /* ================= 胸 ================= */
-  { id: 'barbell-bench',      name: '杠铃卧推',         equipment: 'barbell',    muscle: 'chest',     joints: ['shoulder', 'wrist', 'elbow'], level: 2, type: 'compound', goals: ['strength', 'muscle'] },
+  { id: 'barbell-bench',      name: '杠铃卧推',         equipment: 'barbell',    muscle: 'chest',     joints: ['shoulder', 'wrist', 'elbow'], level: 2, type: 'compound', goals: ['strength', 'muscle'],
+    cues: ['肩胛骨下沉收紧，背贴凳', '下放时肘部约 45°，手腕垂直于杠', '推起时呼气，顶端不要过度锁死肘', '全程脚踩实、核心收紧'] },
   { id: 'dumbbell-bench',     name: '哑铃卧推',         equipment: 'dumbbell',   muscle: 'chest',     joints: ['shoulder', 'elbow'], level: 2, type: 'compound', goals: ['strength', 'muscle'] },
   { id: 'incline-db-press',   name: '上斜哑铃卧推',     equipment: 'dumbbell',   muscle: 'chest',     joints: ['shoulder', 'elbow'], level: 2, type: 'compound' },
   { id: 'machine-chest-press',name: '坐姿推胸器',       equipment: 'machine',    muscle: 'chest',     joints: ['shoulder', 'elbow'], level: 1, type: 'compound' },
@@ -119,7 +122,8 @@ var EXERCISES = [
   { id: 'pec-deck',           name: '蝴蝶机夹胸',       equipment: 'machine',    muscle: 'chest',     joints: ['shoulder'], level: 1, type: 'isolation', goals: ['muscle'] },
   { id: 'cable-fly',          name: '绳索夹胸',         equipment: 'cable',      muscle: 'chest',     joints: ['shoulder'], level: 2, type: 'isolation', goals: ['muscle'] },
   { id: 'dumbbell-fly',       name: '哑铃飞鸟',         equipment: 'dumbbell',   muscle: 'chest',     joints: ['shoulder'], level: 2, type: 'isolation', goals: ['muscle'] },
-  { id: 'pushup',             name: '俯卧撑',           equipment: 'bodyweight', muscle: 'chest',     joints: ['wrist', 'shoulder'], level: 1, type: 'compound' },
+  { id: 'pushup',             name: '俯卧撑',           equipment: 'bodyweight', muscle: 'chest',     joints: ['wrist', 'shoulder'], level: 1, type: 'compound',
+    cues: ['身体呈一条直线，臀不要塌', '双手略宽于肩，手腕在肩下', '下放胸口接近地面再推起', '核心收紧，颈部中立'] },
   { id: 'dips',               name: '双杠臂屈伸',       equipment: 'bodyweight', muscle: 'chest',     joints: ['shoulder', 'elbow', 'wrist'], level: 3, type: 'compound', goals: ['strength'] },
   { id: 'bench-pushup',       name: '上斜俯卧撑',       equipment: 'bench',      muscle: 'chest',     joints: ['shoulder'], level: 1, type: 'compound' },
 
@@ -222,6 +226,52 @@ var EXERCISES = [
   { id: 'jumping-jacks',      name: '开合跳',           equipment: 'bodyweight', muscle: 'cardio',    joints: ['knee', 'ankle'], level: 1, type: 'cardio', goals: ['fat-loss', 'fitness'] }
 ];
 
+
+/* ---------- 动作指导辅助（可选 cues / media；缺省安全回退） ---------- */
+var DEFAULT_CUES_BY_TYPE = {
+  compound: ['保持核心收紧，脊柱中立', '控制离心，避免突然发力', '全程动作幅度完整但不勉强', '呼吸：发力时呼气、下放时吸气'],
+  isolation: ['固定关节，只动目标肌群', '顶端稍作停顿再缓慢下放', '重量服从动作质量', '避免借力甩动'],
+  core: ['全程收紧腹部，避免塌腰', '呼吸平稳，不要憋气过久', '动作缓慢可控', '颈部保持中立'],
+  cardio: ['由慢到快热身', '保持可对话的配速', '注意落地缓冲或踏板位置', '不适立即降低强度']
+};
+var DEFAULT_CUES_GENERIC = ['动作质量优先于重量', '全程控制节奏，避免猛甩', '核心收紧，关节对准发力方向', '有不适立即停止并调整'];
+
+function getExerciseById(id) {
+  if (!id) { return null; }
+  for (var i = 0; i < EXERCISES.length; i++) {
+    if (EXERCISES[i].id === id) { return EXERCISES[i]; }
+  }
+  return null;
+}
+
+/** 返回 3–5 条要点；优先 ex.cues，否则按 type/肌群模板 */
+function getExerciseCues(ex) {
+  if (ex && Array.isArray(ex.cues) && ex.cues.length) {
+    return ex.cues.filter(function (c) { return typeof c === 'string' && c.trim(); }).slice(0, 5);
+  }
+  var type = ex && ex.type ? ex.type : '';
+  var list = (DEFAULT_CUES_BY_TYPE[type] || DEFAULT_CUES_GENERIC).slice();
+  if (ex && ex.muscle === 'back') { list[0] = '肩胛先启动，避免纯靠手臂拉'; }
+  if (ex && ex.muscle === 'quads') { list[0] = '膝盖朝向脚尖，不要过度内扣'; }
+  if (list.length < 3) {
+    DEFAULT_CUES_GENERIC.forEach(function (c) {
+      if (list.length < 4 && list.indexOf(c) < 0) { list.push(c); }
+    });
+  }
+  return list.slice(0, 5);
+}
+
+/** 仅允许相对本地路径（不以 http(s): 或 // 开头）；缺省/非法返回 null */
+function getExerciseMedia(ex) {
+  if (!ex || !ex.media || typeof ex.media !== 'object') { return null; }
+  var src = ex.media.src;
+  if (typeof src !== 'string' || !src.trim()) { return null; }
+  src = src.trim();
+  if (/^https?:\/\//i.test(src) || src.indexOf('//') === 0) { return null; }
+  var type = ex.media.type === 'gif' || ex.media.type === 'image' || ex.media.type === 'video' ? ex.media.type : 'image';
+  return { type: type, src: src };
+}
+
 var FITNESS_DB = {
   EQUIPMENT: EQUIPMENT,
   BODYWEIGHT: BODYWEIGHT,
@@ -233,7 +283,10 @@ var FITNESS_DB = {
   DAYTYPE: DAYTYPE,
   EX_PER_SESSION: EX_PER_SESSION,
   WEEKDAYS_CN: WEEKDAYS_CN,
-  EXERCISES: EXERCISES
+  EXERCISES: EXERCISES,
+  getExerciseById: getExerciseById,
+  getExerciseCues: getExerciseCues,
+  getExerciseMedia: getExerciseMedia
 };
 
 if (typeof window !== 'undefined') { window.FITNESS_DB = FITNESS_DB; }

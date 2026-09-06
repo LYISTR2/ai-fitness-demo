@@ -1,0 +1,121 @@
+/* Phase2 motion — train feedback only; respects prefers-reduced-motion */
+
+/* ---- 完成本组：行勾选 + 底色轻闪 120–180ms ---- */
+.hevy-row.hevy-row--just-done{
+  animation: hevyJustDone 150ms ease-out;
+  background:rgba(200,247,80,.22)!important;
+  border-color:var(--accent)!important;
+  opacity:1;
+}
+.hevy-row.hevy-row--just-done .hevy-check{
+  background:var(--accent);
+  color:var(--accent-ink);
+  border-color:var(--accent);
+  transform:scale(1.06);
+}
+@keyframes hevyJustDone{
+  0%{background:rgba(200,247,80,.38)}
+  100%{background:rgba(200,247,80,.12)}
+}
+
+/* ---- 组间休息：环连续减；中间秒数无翻滚 ---- */
+.rest-ring{
+  transition:none;
+}
+.rest-time{
+  font-variant-numeric:tabular-nums;
+  transition:none;
+}
+.rest-overlay.rest-overlay--enter .rest-card{
+  animation: restCardIn 180ms ease-out;
+}
+@keyframes restCardIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:none}
+}
+
+/* ---- 切换动作：同向轻移；底栏不动 ---- */
+.hevy-stage{
+  will-change:transform,opacity;
+}
+.hevy-stage.hevy-stage--leave{
+  animation: hevyStageLeave 220ms ease-in forwards;
+}
+.hevy-stage.hevy-stage--enter{
+  animation: hevyStageEnter 260ms ease-out;
+}
+@keyframes hevyStageLeave{
+  to{opacity:0;transform:translateX(-18px)}
+}
+@keyframes hevyStageEnter{
+  from{opacity:0;transform:translateX(18px)}
+  to{opacity:1;transform:none}
+}
+
+/* ---- 完成整次：环闭合 → 总结；破纪录轻庆祝 ---- */
+.finish-close{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:42vh;padding:40px 20px;text-align:center;color:var(--text);
+}
+.finish-close-ring{
+  width:96px;height:96px;border-radius:50%;
+  background:conic-gradient(var(--accent) 0deg, var(--card2) 0deg);
+  display:grid;place-items:center;position:relative;
+  animation: finishRingClose 700ms ease-out forwards;
+  margin-bottom:16px;
+}
+.finish-close-ring::before{
+  content:"";position:absolute;inset:8px;border-radius:50%;background:var(--bg);
+}
+.finish-close-ring::after{
+  content:"✓";position:relative;z-index:1;
+  font-size:28px;font-weight:700;color:var(--accent);
+  opacity:0;animation: finishMarkIn 200ms ease-out 520ms forwards;
+}
+.finish-close p{font-size:15px;color:var(--muted);margin:0}
+@keyframes finishRingClose{
+  from{background:conic-gradient(var(--accent) 0deg, var(--card2) 0deg)}
+  to{background:conic-gradient(var(--accent) 360deg, var(--card2) 0deg)}
+}
+@keyframes finishMarkIn{
+  from{opacity:0;transform:scale(.85)}
+  to{opacity:1;transform:none}
+}
+.finish-hero.finish-hero--enter{
+  animation: finishSummaryIn 320ms ease-out;
+}
+.finish-hero.finish-hero--pr{
+  box-shadow:0 0 0 1px var(--accent), 0 12px 36px rgba(200,247,80,.12);
+}
+.finish-hero.finish-hero--pr .finish-pr-badge{
+  display:inline-block;margin:8px 0 0;
+  padding:4px 10px;border-radius:999px;
+  background:var(--accent);color:var(--accent-ink);
+  font-size:12px;font-weight:700;
+}
+.finish-pr-badge{display:none}
+@keyframes finishSummaryIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:none}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .hevy-row.hevy-row--just-done,
+  .hevy-row.hevy-row--just-done .hevy-check{
+    animation:none!important;
+    transform:none!important;
+    transition:background-color 120ms linear, border-color 120ms linear;
+  }
+  .rest-overlay.rest-overlay--enter .rest-card,
+  .hevy-stage.hevy-stage--leave,
+  .hevy-stage.hevy-stage--enter,
+  .finish-close-ring,
+  .finish-close-ring::after,
+  .finish-hero.finish-hero--enter{
+    animation:none!important;
+  }
+  .finish-close-ring{
+    background:conic-gradient(var(--accent) 360deg, var(--card2) 0deg);
+  }
+  .finish-close-ring::after{opacity:1}
+}

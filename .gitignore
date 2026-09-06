@@ -18,3 +18,11 @@ tmp/
 
 # Generated static build
 dist/
+# Android generated files and local configuration
+android/.gradle/
+android/build/
+android/app/build/
+android/app/src/main/assets/
+android/local.properties
+*.jks
+*.keystore
