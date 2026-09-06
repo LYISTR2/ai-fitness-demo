@@ -8,25 +8,25 @@
 
 /* ---------- 器械目录 ---------- */
 var EQUIPMENT = [
-  { key: 'barbell',    name: '杠铃',        icon: '🏋️', group: 'strength' },
-  { key: 'dumbbell',   name: '哑铃',        icon: '💪', group: 'strength' },
-  { key: 'machine',    name: '固定器械',     icon: '🦾', group: 'strength' },
-  { key: 'cable',      name: '绳索/龙门架',  icon: '🪢', group: 'strength' },
-  { key: 'smith',      name: '史密斯机',     icon: '🏗️', group: 'strength' },
-  { key: 'squat-rack', name: '深蹲架',       icon: '⬜', group: 'strength' },
-  { key: 'bench',      name: '训练凳',       icon: '🪑', group: 'strength' },
-  { key: 'pullup',     name: '引体架',       icon: '🧗', group: 'strength' },
-  { key: 'kettlebell', name: '壶铃',        icon: '🫖', group: 'strength' },
-  { key: 'band',       name: '弹力带',       icon: '🎗️', group: 'strength' },
-  { key: 'mat',        name: '瑜伽垫',       icon: '🧘', group: 'aux' },
-  { key: 'treadmill',  name: '跑步机',       icon: '🏃', group: 'cardio' },
-  { key: 'bike',       name: '动感单车',     icon: '🚴', group: 'cardio' },
-  { key: 'elliptical', name: '椭圆机',       icon: '🚶', group: 'cardio' },
-  { key: 'rower',      name: '划船机',       icon: '🚣', group: 'cardio' },
-  { key: 'stair',      name: '台阶器',       icon: '🪜', group: 'cardio' }
+  { key: 'barbell',    name: '杠铃',        icon: 'barbell', group: 'strength' },
+  { key: 'dumbbell',   name: '哑铃',        icon: 'dumbbell', group: 'strength' },
+  { key: 'machine',    name: '固定器械',     icon: 'machine', group: 'strength' },
+  { key: 'cable',      name: '绳索/龙门架',  icon: 'cable', group: 'strength' },
+  { key: 'smith',      name: '史密斯机',     icon: 'smith', group: 'strength' },
+  { key: 'squat-rack', name: '深蹲架',       icon: 'squat-rack', group: 'strength' },
+  { key: 'bench',      name: '训练凳',       icon: 'bench', group: 'strength' },
+  { key: 'pullup',     name: '引体架',       icon: 'pullup', group: 'strength' },
+  { key: 'kettlebell', name: '壶铃',        icon: 'kettlebell', group: 'strength' },
+  { key: 'band',       name: '弹力带',       icon: 'band', group: 'strength' },
+  { key: 'mat',        name: '瑜伽垫',       icon: 'mat', group: 'aux' },
+  { key: 'treadmill',  name: '跑步机',       icon: 'treadmill', group: 'cardio' },
+  { key: 'bike',       name: '动感单车',     icon: 'bike', group: 'cardio' },
+  { key: 'elliptical', name: '椭圆机',       icon: 'elliptical', group: 'cardio' },
+  { key: 'rower',      name: '划船机',       icon: 'rower', group: 'cardio' },
+  { key: 'stair',      name: '台阶器',       icon: 'stair', group: 'cardio' }
 ];
 /* 自重始终可用，无需勾选 */
-var BODYWEIGHT = { key: 'bodyweight', name: '自重训练', icon: '🧍', note: '无需器械，始终可用' };
+var BODYWEIGHT = { key: 'bodyweight', name: '自重训练', icon: 'bodyweight', note: '无需器械，始终可用' };
 
 /* ---------- 肌群 ---------- */
 var MUSCLES = {

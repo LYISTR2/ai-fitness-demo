@@ -17,8 +17,26 @@
       dashboard: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
       profile: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h4"/>',
       equipment: '<path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/>',
+      barbell: '<path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/>',
+      dumbbell: '<path d="M6.5 8v8M17.5 8v8M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+      machine: '<rect x="4" y="3" width="16" height="18" rx="2"/><rect x="7.5" y="6.5" width="9" height="7" rx="1"/><circle cx="12" cy="17" r="1.3"/>',
+      cable: '<path d="M5 4c6 2 8 5 7 8s2 5 7 8"/><circle cx="4.2" cy="3.6" r="1.4"/><circle cx="19.8" cy="20.4" r="1.4"/>',
+      smith: '<path d="M4 3v18M20 3v18M4 6h16M8 10h8l-1.5 6h-5Z"/>',
+      'squat-rack': '<path d="M5 3v18M19 3v18M3 7h4M17 7h4M5 13h14"/>',
+      bench: '<path d="M3 13h18M5 13l1.5-4h11L19 13M6 13v5M18 13v5"/>',
+      pullup: '<path d="M4 3v4M20 3v4M4 7h16M9 7v8a3 3 0 0 0 6 0V7"/>',
+      kettlebell: '<path d="M9 7a4.5 4.5 0 1 0 .2 0"/><path d="M9.5 7a5 3.4 0 0 1 5 0"/><path d="M8 7h8l1.2 4.5a6.3 6.3 0 1 1-10.4 0Z"/>',
+      band: '<path d="M7 4c-2.5 3-2.5 13 0 16M17 4c2.5 3 2.5 13 0 16M7 9c2.5-2 7.5-2 10 0M7 15c2.5 2 7.5 2 10 0"/>',
+      mat: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 9.5h16M4 14.5h16"/>',
+      treadmill: '<path d="M17 4a2.5 2.5 0 1 1-2.5 2.5"/><path d="M14.5 6.5 6 9.5m0 0a2 2 0 1 0 .01 3.99M6 9.5l10 3.5m0 0a2 2 0 1 0 .01 3.99M16 13l-1 6M3.5 20.5h17"/>',
+      bike: '<circle cx="5.5" cy="17" r="3.2"/><circle cx="18.5" cy="17" r="3.2"/><path d="M5.5 17 9 9h6.5M18.5 17 14.5 9M8 9h5"/>',
+      elliptical: '<circle cx="6" cy="17.5" r="2.6"/><circle cx="18" cy="17.5" r="2.6"/><path d="M6 15 14 4h6M18 15 10 4H4"/>',
+      rower: '<path d="M4 17c2.5-1.5 5.5-1.5 8 0s5.5 1.5 8 0M14 4l5 5"/><path d="m9.5 6.5 6 6"/><circle cx="8" cy="5.5" r="1.5"/><path d="m11 8 4 4-5 3-2.5-2.5Z"/>',
+      stair: '<path d="M4 20h4v-4h4v-4h4V8h4V4"/><path d="M4 20V4"/>',
+      train: '<circle cx="6.5" cy="17.5" r="2"/><circle cx="17.5" cy="17.5" r="2"/><rect x="4" y="4" width="16" height="11" rx="2"/><path d="M4 9h16M9 4v5M15 4v5"/>',
+      bodyweight: '<circle cx="12" cy="5" r="2"/><path d="M12 7.5v6M12 13.5l-3.5 7M12 13.5l3.5 7M7 9.5c1.6-1.2 8.4-1.2 10 0"/>',
       plan: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2"/>',
-      train: '<path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z"/>',
+      bolt: '<path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z"/>',
       arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>',
       check: '<path d="m5 12 4 4L19 6"/>',
       clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -428,7 +446,7 @@
       return DB.EQUIPMENT.filter(function (e) { return e.group === group; }).map(function (e) {
         var on = selKeys.indexOf(e.key) >= 0;
         return '<div class="equip-item' + (on ? ' on' : '') + '" data-eq="' + e.key + '" role="button" tabindex="0">' +
-          '<div class="ic">' + icon(e.group === 'cardio' ? 'train' : 'equipment') + '</div><div class="nm">' + e.name + '</div></div>';
+          '<div class="ic">' + icon(e.icon) + '</div><div class="nm">' + e.name + '</div></div>';
       }).join('');
     }
 
@@ -440,7 +458,7 @@
     v.innerHTML =
       '<div class="card"><h2>器械库</h2><p class="sub">勾选你健身房实际可用的器械 —— 计划只会从这些器械中选动作。变更后请重新生成计划。</p>' +
       '<div class="equip-group-title">自重 · 始终可用</div>' +
-      '<div class="equip-grid"><div class="equip-item on locked"><div class="ic">' + icon('train') + '</div><div class="nm">' + DB.BODYWEIGHT.name + '</div></div></div>' +
+      '<div class="equip-grid"><div class="equip-item on locked"><div class="ic">' + icon('bodyweight') + '</div><div class="nm">' + DB.BODYWEIGHT.name + '</div></div></div>' +
       '<div class="equip-group-title">力量器械</div>' +
       '<div class="equip-grid">' + grid('strength') + '</div>' +
       '<div class="equip-group-title">有氧器械</div>' +
